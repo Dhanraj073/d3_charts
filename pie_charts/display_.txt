@@ -1,0 +1,28 @@
+function run(){
+	var svg=d3.select("svg");
+	var data = [
+	{x: 100, y: 194},
+      {x:  80, y: 184},
+      {x: 130, y: 74},
+      {x:  90, y: 87}
+	];
+
+	var circles=svg.selectAll("circle")
+		.data(data)
+		.attr("cx",function(d) { return d.x ;} )
+		.attr("cy",function(d){return  d.y ;})
+		//.attr("width",function(d,i){ return d ;})
+		//.attr("height" , 20)
+		.style("fill",function(d){
+			if(d.x<="81")
+				return "green";
+			if(d.x >="81"  && d.x<="91")
+				return "black";
+			if(d.x>="92" && d.x<="100")
+				return "red";
+			else
+				return "blue";
+		});
+
+	console.log(circles);
+}

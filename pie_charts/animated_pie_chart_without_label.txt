@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Step 1 - A Basic Pie Chart</title>
+    <style>
+    #chart {
+  		height: 360px;
+  		position: relative;
+  		width: 360px;
+	}
+	.tooltip {
+  		background: #eee;
+  		box-shadow: 0 0 5px #999999;
+  		color: #333;
+  		display: none;
+  		font-size: 12px;
+  		left: 130px;
+  		padding: 10px;
+  		position: absolute;
+  		text-align: center;
+  		top: 95px;
+  		width: 80px;
+  		z-index: 10;
+	}
+   	</style>
+</head>
+<body>
+    <div id="chart"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+    <script>
+      (function(d3)
+       {
+        	var width = 360;
+        	var height = 360;
+        	var radius = Math.min(width, height) / 2;
+        	//var don_width= 80;
+        	//color setting of each portion
+			var color = d3.scale.category20b();
+    		
+    		var svg = d3.select('#chart')
+          		.append('svg')
+          		.attr('width', width)
+          		.attr('height', height)
+          		.append('g')
+          		.attr('transform', 'translate(' + (width / 2) + 
+            ',' + (height / 2) + ')');
+    		
+        	var pie = d3.layout.pie()
+          		.value(function(d) { return d.count; 	})
+          		.sort(null);
+			
+			var tooltip =d3.select('#chart')
+				.append('div')
+				.attr('class','tooltip');
+
+			tooltip.append('div')
+				.attr('class','label');
+
+			tooltip.append('div')
+				.attr('class','count');
+			tooltip.append('div')
+				.attr('class','percent');
+
+
+			var arc = d3.svg.arc()
+    			//.innerRadius(radius-don_width)
+      			.outerRadius(radius);
+
+      		//for effect of exploding
+      		var arcOver =d3.svg.arc()
+      			.outerRadius(radius +15);
+			////////////////////function for animation ///////////////require interpolators.......
+
+			function tweenPie(finish){
+				var strt={
+					startAngle:0,
+					endAngle:0
+				};
+				var i=d3.interpolate(strt,finish);
+				return function(d){return arc(i(d)) ;};
+			}
+
+			//d3.select(config.el).selectAll('g').remove();
+
+			d3.csv('data.csv', function(error, dataset) 
+			{           
+          		dataset.forEach(function(d){                          
+            		d.count = +d.count;                                    
+          		});    
+
+          		var path = svg.selectAll('path')
+            	.data(pie(dataset))
+            	.enter()
+            	.append('path')
+            	.attr('d', arc)
+            	.attr('fill', function(d, i){ 
+              		return color(d.data.label);
+            	});
+            	//
+
+            	path.transition()
+            		.duration(1000)
+            		.attrTween('d',tweenPie);
+
+            	//now we have to use mouseEvent handler	
+            	//data to be displayed while hovering over the pie chart and the outer radius will increase such that split can be shown
+            	path.on('mouseover',function(d){
+            		var tot =d3.sum(dataset.map(function(d){
+            			return d.count;
+            		}));
+
+            		var percent = Math.round((1000* d.data.count)/tot) /10;
+            		tooltip.select('.label').html(d.data.label);
+  					tooltip.select('.count').html(d.data.count); 
+  					tooltip.select('.percent').html(percent + '%'); 
+  					tooltip.style('display', 'block');
+
+  					d3.select(this)
+  						.attr("stroke","white")
+  						.transition()
+  						.duration(1000)
+  						.attr('d',arcOver)
+  						.attr("stroke-width",6);
+				});
+
+
+            	path.on('mouseout',function(d){
+            		tooltip.style('display','none');
+            		d3.select(this).transition()
+            		.attr('d',arc)
+            		.attr("stroke","none")
+            	});
+        	});        
+      	})(window.d3);
+    </script>
+  </body>
+</html>
