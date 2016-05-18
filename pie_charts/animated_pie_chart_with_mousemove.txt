@@ -5,9 +5,11 @@
     <title>Step 1 - A Basic Pie Chart</title>
     <style>
     #chart {
-  		height: 500px;
+  		height: 1200px;
   		position: center;
-  		width: 500px;
+  		width: 1200px;
+  		margin-left: 200px;
+  		margin-top: 150px;
 	}
 	.tooltip {
   		background: #eee;
@@ -23,6 +25,7 @@
   		width: 80px;
   		z-index: 10;
 	}
+
    	</style>
 </head>
 <body>
@@ -31,9 +34,9 @@
     <script>
       (function(d3)
        {
-        	var width = 360;
-        	var height = 360;
-        	var radius = Math.min(width, height) / 2;
+        	var width = 500;
+        	var height = 500;
+        	var radius = 150;
         	//var don_width= 80;
         	//color setting of each portion
 			var color = d3.scale.category20b();
@@ -138,7 +141,28 @@
             		.attr("stroke","none")
             	});
 
-            	path.on('mousemove')
+            	//adding mousemove effect
+            	path.on('mousemove',function(d){
+            		var tot =d3.sum(dataset.map(function(d){
+            			return d.count;
+            		}));
+            		var arr =d3.mouse(this);
+            		//console.log("x" : arr[0] , "y" : arr[1]);
+            		tooltip.style({
+                    	left: (arr[0]+300)+"px",
+                    	top: (arr[1]+350)+"px"
+               
+                	});
+                	//console.log(tooltip.left);
+                    //	console.log(tooltip.top);
+            		var percent = Math.round((1000* d.data.count)/tot) /10;
+            		tooltip.select('.label').html(d.data.label);
+  					tooltip.select('.count').html(d.data.count); 
+  					tooltip.select('.percent').html(percent + '%'); 
+  					tooltip.style('display', 'block');
+  					//console
+
+            	});
         	});        
       	})(window.d3);
     </script>
