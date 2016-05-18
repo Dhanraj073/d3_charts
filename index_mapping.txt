@@ -1,0 +1,153 @@
+//by default index matching
+
+var data=[10,20,30,40,50,60,70,80,90,100,110,120];
+
+var svg=d3.select("svg");
+
+svg.selectAll("rect")
+	.data(data)
+	.enter().append("rect")
+		.attr("x",function(d,i){return i*20 + 30 ;})
+		.attr("y",function(d,i){return 200-d;})
+		.attr("width",10)
+		.attr("height",function(d,i){ return d;})
+		.style("fill","steelblue");
+
+
+function run(){
+
+	var first =data.shift();
+	data.push(first);
+	svg.selectAll("rect")
+		.data(data)
+		.transition()
+		.duration(2000)
+			.attr("x",function(d,i){return i*20 +30 ;})
+			.attr("y",function(d,i){return 200-d;})
+			.attr("width",10)
+			.attr("height",function(d,i){return d;})
+			.style("fill","steelblue");
+}
+
+
+// index matching initiated by user
+
+
+
+// using this we could basically see how the binding is done.
+var I =function(d){ return d;};
+var data=[10,20,30,40,50,60,70,80,90,100,110,120];
+
+var svg=d3.select("svg");
+
+svg.selectAll("rect")
+	.data(data,I)  //basically binding data to elements using user defined keys
+	.enter().append("rect")
+		.attr("x",function(d,i){return i*20 + 30 ;})
+		.attr("y",function(d,i){return 200-d;})
+		.attr("width",10)
+		.attr("height",function(d,i){ return d;})
+		.style("fill","steelblue");
+
+
+function run(){
+
+	var first =data.shift();
+	data.push(first);
+	svg.selectAll("rect")
+		.data(data,I)  //binding data to elements
+		.transition()
+		.duration(2000)
+			.attr("x",function(d,i){return i*20 +30 ;})
+			.attr("y",function(d,i){return 200-d;})
+			.attr("width",10)
+			.attr("height",function(d,i){return d;})
+			.style("fill","steelblue");
+}
+
+
+
+//alternative way of writing the above codes using .call function
+
+
+
+// using this we could basically see how the binding is done.
+
+var data=[10,20,30,40,50,60,70,80,90,100,110,120];
+
+var I =function(d,i) { return i*20 + 30};
+
+function updateRect(rect){
+	return rect.attr("x",I) //mapping
+		.attr("y",function(d,i){return 200-d ;})
+		.attr("width",10)
+		.attr("height",function(d,i){return d;})
+		.style("fill","steelblue");
+}
+
+var svg=d3.select("svg");
+
+svg.selectAll("rect")
+	.data(data,I)  //basically binding data to elements using user defined keys
+	.enter().append("rect")
+		.call(updateRect);
+
+function run(){
+
+	var first =data.shift();
+	data.push(first);
+	svg.selectAll("rect")
+		.data(data,function(d){return d;})  //binding data to elements
+		.transition()
+		.duration(500)
+			.call(updateRect)
+}
+
+
+
+//input_mapping for some new random data
+
+var i=0;
+var data = [10,20,30,40,50,60,70,80,90,100,110,120].map(function(x){return {id:i++,x:x};});
+
+
+var formatRect =function(sel){
+	sel.attr("x",function(d,i){ return i*20+30;})
+		.attr("y",function(d,i){ return 200-d.x ;})
+		.attr("height",function(d,i){return d.x ;})
+		.attr("width",10)
+		.style("fill","steelblue");
+	return sel; // returning object for chain calling.
+};
+
+var getId =function(d){return d.id;};
+
+var svg =d3.select("svg");
+svg.selectAll("rect")
+	.data(data,getId)
+	.enter().append("rect")
+	.call(formatRect);
+
+	function run(){
+		data.shift();  //removing first element
+		data.push({id:i,x : ((i%20)+1)*10});
+		i++;
+
+		//console.log(data);
+
+		var rects=svg.selectAll("rect")
+		.data(data,getId);
+
+		rects.enter().append("rect");
+
+		rects.transition()
+			.duration(500)
+			.call(formatRect);
+
+		rects.exit()
+			.transition().duration(500)
+			.style("opacity","0")
+			.remove();
+	}
+
+

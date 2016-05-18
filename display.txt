@@ -1,0 +1,43 @@
+
+// for displaying in vertical form --figure display_vert
+
+function run(){
+	var svg=d3.select("svg");
+	var data = [120,165,15];
+
+	var rects=svg.selectAll("rect")
+		.data(data)
+		.attr("y",0)
+		.attr("x",function(d,i){return i*30+30})
+		.attr("height",function(d,i){ return d ;})
+		.attr("width" , 20)
+		.style("fill","steelblue")
+
+	console.log(rects);
+}
+
+
+
+//to display in horizontal
+
+
+function run(){
+	var svg=d3.select("svg");
+	var data = [120,165,15];
+
+	var rects=svg.selectAll("rect")
+		.data(data)
+		.attr("x",0)
+		.attr("y",function(d,i){return i*30+30})
+		.attr("width",function(d,i){ return d ;})
+		.attr("height" , 20)
+		.style("fill","steelblue")
+
+	console.log(rects);
+}
+
+
+
+
+
+
