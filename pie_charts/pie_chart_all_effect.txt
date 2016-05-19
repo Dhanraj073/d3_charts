@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Step 1 - A Basic Pie Chart</title>
+    <style>
+    #chart {
+  		height: 1200px;
+  		position: center;
+  		width: 1200px;
+  		margin-left: 200px;
+  		margin-top: 150px;
+	}
+	.tooltip {
+  		background: #eee;
+  		box-shadow: 0 0 5px #999999;
+  		color: #333;
+  		display: none;
+  		font-size: 12px;
+  		left: 130px;
+  		padding: 10px;
+  		position: absolute;
+  		text-align: center;
+  		top: 95px;
+  		width: 80px;
+  		z-index: 10;
+	}
+
+   	</style>
+</head>
+<body>
+    <div id="chart"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+    <script>
+      (function(d3)
+       {
+       		var cnt1=0;
+        	var width = 500;
+        	var height = 500;
+        	var radius = 150;
+        	//var don_width= 80;
+        	//color setting of each portion
+			var color = d3.scale.category20b();
+    		var svg = d3.select('#chart')
+          		.append('svg')  //create svg element
+          		.attr('width', width)
+          		.attr('height', height)
+          		.append('g')   // making a group
+          		.attr('transform', 'translate(' + (width / 2) + 
+            ',' + (height / 2) + ')');
+    		
+
+        	var pie = d3.layout.pie()
+          		.value(function(d) { return d.count; 	})
+          		.sort(null);
+			
+			//for hovering purpose created a general tooltip variable
+			var tooltip =d3.select('#chart')
+				.append('div')
+				.attr('class','tooltip');
+			tooltip.append('div')
+				.attr('class','label');
+			tooltip.append('div')
+				.attr('class','count');
+			tooltip.append('div')
+				.attr('class','percent');
+
+			//defining radius of pie chart ...in case of donut just uncomment innerradius and uncomment variable don_width
+			var arc = d3.svg.arc()
+    			//.innerRadius(0)
+      			.outerRadius(radius);
+
+
+      		//for effect of exploding or expanding .just increase the outer radius
+      		var arcOver =d3.svg.arc()
+      			.outerRadius(radius +15);
+			
+
+			////////////////////function for animation ///////////////require interpolators.......
+			function tweenPie(finish){
+				var strt={
+					startAngle:0,
+					endAngle:0
+				};
+				var i=d3.interpolate(strt,finish);
+				return function(d){return arc(i(d)) ;};
+			}
+
+			//loading the data and then applying all the constraints
+
+			d3.csv('data.csv', function(error, dataset) 
+			{           
+          		//storing data values in dataset
+          		dataset.forEach(function(d){                          
+            		d.count = +d.count;                                    
+          		});    
+
+          		//defining a selection variable that will be used for colors distribution in the chart
+          	/*	var path = svg.selectAll('path')
+            	.data(pie(dataset))
+            	.enter()                      // used this so that mapping could be done properly i.e all data could be mapped to some distinct elements in DOM
+            	.append('path')
+            	
+            	.attr('fill', function(d, i){ 
+              		return color(d.data.label);           /// assigning color to each part of pie chart representation
+            	});
+           		*/
+           		var arcs =svg.selectAll('g.slice')
+           			.data(pie(dataset))
+           			.enter()
+           			.append('g')
+           			.attr("class","slice")
+           			.on('click',function(d,i)
+           			{
+           				d3.select(this)
+        				.transition()
+        				.duration(500)
+        				.attr("transform",function(d)
+        				{
+		        			if (!d.data._expanded)
+		        			{
+		        				d.data._expanded = true;
+		        				var a = d.startAngle + (d.endAngle - d.startAngle)/2 - Math.PI/2;
+		        				var x = Math.cos(a) * 20;
+		        				var y = Math.sin(a) * 20;
+		            			return 'translate(' + x + ',' + y + ')';                
+		        			} 
+		        			else 
+		        			{
+		           	 			d.data._expanded = false;
+		            			return 'translate(0,0)';                
+		        			}
+        				}); 
+    				});
+
+    			arcs.append("path")
+    				.attr('fill', function(d, i){ 
+              		return color(d.data.label);      
+              		     /// assigning color to each part of pie chart representation
+            		})
+            		.attr('d', arc);
+
+           		arcs.append("svg:text")
+           			.attr("transform",function(d){
+           				d.outerRadius= radius+ 60;
+           				d.innerRadius=	radius + 55;
+           				return 'translate('+arc.centroid(d)+')';
+           			})
+           			.attr("text-anchor","middle")
+           			.style("fill","Purple")
+           			.style("font","bold 12px Arial")
+           			.text(function(d,i){return dataset[i].label; });
+           			
+            	//for animated transition ..we have to define  strtangle and endangle for each part and thus an animated view could be created
+            	arcs.transition()
+            		.duration(1000)
+            		.attrTween('d',tweenPie);   //
+
+				
+					
+					
+            	//now we have to use mouseEvent handler	so that data associated with each block could be displayed while hovering over the pie chart and the outer radius will increase such that split can be shown
+            	arcs.on('mouseover',function(d){
+            		var tot =d3.sum(dataset.map(function(d){
+            			return d.count;
+            		}));
+
+            		var percent = Math.round((1000* d.data.count)/tot) /10;
+            		tooltip.select('.label').html(d.data.label);
+  					tooltip.select('.count').html(d.data.count); 
+  					tooltip.select('.percent').html(percent + '%'); 
+  					tooltip.style('display', 'block');
+
+  					//binded data in previous lines and defining how the data will be displayed and what will be displayed
+  					/*d3.select(this)
+  						.attr("stroke","white")
+  						.transition()
+  						.duration(1000)
+  						.attr('d',arcOver)   // this and next line basically used for expanding the pie chart by increasing the outer radius
+  						.attr("stroke-width",6);   */
+				});
+            	arcs.on('mouseout',function(d){
+            		tooltip.style('display','none');
+            	/*	d3.select(this).transition()
+            		.attr('d',arc)    // this and next line for making the extended arc come back to initial position
+            		.attr("stroke","none")   */
+            	});
+
+            	//adding mousemove effect
+            	arcs.on('mousemove',function(d){
+            		var tot =d3.sum(dataset.map(function(d){
+            			return d.count;
+            		}));
+            		var arr =d3.mouse(this);
+            		//console.log("x" : arr[0] , "y" : arr[1]);
+            		tooltip.style({
+                    	left: (arr[0]+300)+"px",
+                    	top: (arr[1]+350)+"px"
+               
+                	});
+                	//console.log(tooltip.left);
+                    //	console.log(tooltip.top);
+            		var percent = Math.round((1000* d.data.count)/tot) /10;
+            		tooltip.select('.label').html(d.data.label);
+  					tooltip.select('.count').html(d.data.count); 
+  					tooltip.select('.percent').html(percent + '%'); 
+  					tooltip.style('display', 'block');
+  					//console
+
+            	});
+        	});        
+      	})(window.d3);
+    </script>
+  </body>
+</html>
