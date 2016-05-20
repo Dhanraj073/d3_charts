@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>My pie chart</title>
+    <style>
+    #chart {
+  		height: 1200px;
+  		position: center;
+  		width: 1200px;
+  		margin-left: 200px;
+  		margin-top: 150px;
+	}
+	.tooltip {
+  		background: #eee;
+  		box-shadow: 0 0 5px #999999;
+  		color: #333;
+  		display: none;
+  		font-size: 12px;
+  		left: 130px;
+  		padding: 10px;
+  		position: absolute;
+  		text-align: center;
+  		top: 95px;
+  		width: 80px;
+  		z-index: 10;
+	}
+	.textLines {
+    	stroke-width: 1;
+    	stroke: #393939;
+	}
+   	</style>
+</head>
+<body>
+    <div id="chart"></div>
+    <!--script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>-->
+    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script>
+      (function(d3)
+       {
+       		//variables used
+       		var check1=1;   // for displaying labels
+       		var check2=1;    // for expanding
+       		var check4=1;   //for hovering purpose
+        	var width = 500;
+        	var height = 500;
+        	var radius = 100;
+			var color = d3.scale.category10();   //for arc color
+			var labelRadius= 675;
+			//var don_width= 80;
+
+
+
+    		var svg = d3.select('#chart')
+          		.append('svg')  //create svg element
+          		.attr('width', width)
+          		.attr('height', height)
+          		.append('g')   // making a group
+          		.attr('transform', 'translate(' + (width / 2) + 
+            ',' + (height / 2) + ')');
+    		
+
+        	var pie = d3.layout.pie()
+          		.value(function(d) { return d.count; 	})
+          		.sort(null);
+	
+
+
+			//for hovering purpose created a general tooltip variable
+			var tooltip =d3.select('#chart')
+					.append('div')
+					.attr('class','tooltip');
+				tooltip.append('div')
+					.attr('class','label');
+				tooltip.append('div')
+					.attr('class','count');
+				tooltip.append('div')
+					.attr('class','percent');
+
+
+
+			//defining radius of pie chart ...in case of donut just uncomment innerradius and uncomment variable don_width
+			var arc = d3.svg.arc()
+    			//.innerRadius(0)
+      			.outerRadius(radius);
+
+
+
+      		//for effect of exploding or expanding .just increase the outer radius
+      		var arcOver =d3.svg.arc()
+      			.outerRadius(radius +30);
+			
+
+			////////////////////function for animation ///////////////require interpolators.......
+			function tweenPie(finish)
+			{
+				var strt=
+				{
+					startAngle:0,
+					endAngle:0
+				};
+				var i=d3.interpolate(strt,finish);
+				return function(d){	return arc(i(d)) ;};
+			}
+
+
+
+			//loading the data and then applying all the functionalities
+			d3.csv('data.csv', function(error, dataset) 
+			{           
+          		//storing data values in dataset
+          		dataset.forEach(function(d){                          
+            		d.count = +d.count;                                    
+          		});    
+          		
+
+
+          		//defining a selection variable that will be used for implementing functionalities
+           		var arcs =svg.selectAll('g.slice')
+           			.data(pie(dataset))
+           			.enter()
+           			.append('g')
+           			.attr("class","slice")
+           			.on('click',function(d,i)
+           			{
+           				d3.select(this)
+        				.transition()
+        				.duration(500)
+        				.attr("transform",function(d)
+        				{
+        					if(check2 && !d.data._expanded)   //condition for whether to expand or not
+        					{
+		        				d.data._expanded = true;
+		        				var a = d.startAngle + (d.endAngle - d.startAngle)/2 - Math.PI/2;
+		        				var x = Math.cos(a) * 20;
+		        				var y = Math.sin(a) * 20;
+		            			return 'translate(' + x + ',' + y + ')';                
+		        			} 
+		        			else 
+		        			{
+		           	 			d.data._expanded = false;
+		            			return 'translate(0,0)';                
+		        			}
+        				}); 
+    				});
+
+
+
+           			
+
+           			//for textline outside the chart
+
+           			/*arcs.append("line")
+           			.attr("x1", function(d){//console.log(arc.centroid(d));
+           									var c=arc.centroid(d)[0];
+           									return c ;
+           									console.log(c);})
+           			.attr("x2",function(d){var c=arc.centroid(d)[0];
+           										return c + 10 ;})
+           			.attr("y1",function(d){var c=arc.centroid(d)[1];
+           									return c ;})
+           			.attr("y2",function(d){var c=arc.centroid(d)[1];
+           									return c +10;})
+           			.attr("stroke-width",1)
+           			.attr("stroke","black");  */
+           			
+        
+
+
+           			//for label displaying
+    				arcs.append("svg:text")
+           			.attr("transform",function(d)
+           			{
+           				d.outerRadius= radius+ 60;
+           				d.innerRadius=	radius + 55;
+           				return 'translate('+arc.centroid(d)+')';
+           			})
+           			.attr("text-anchor","middle")
+           			.style("fill","Purple")
+           			.style("font","bold 12px Arial")
+           			.text(function(d,i){
+           				if(check1)
+           				return dataset[i].label; 
+           			});
+				
+
+           			//redefining arc so that pie chart could be made
+    				arc = d3.svg.arc()
+    					.innerRadius(0)
+      					.outerRadius(radius);
+    				
+    				arcs.append("path")
+    				.attr('fill', function(d, i){ 
+              		return color(d.data.label);      
+              		     /// assigning color to each part of pie chart representation
+            		})
+            		.attr('d',arc)
+            		.transition()
+           			.duration(500)
+           			.attrTween('d',tweenPie);
+
+
+           			
+	
+            	//now we have to use mouseEvent handler	so that data associated with each block could be displayed while hovering over the pie chart and the outer radius will increase such that split can be shown
+            	arcs.on('mouseover',function(d){
+            		var tot =d3.sum(dataset.map(function(d){
+            			return d.count;
+            		}));
+
+            		var percent = Math.round((1000* d.data.count)/tot) /10;
+            		tooltip.select('.label').html(d.data.label);
+  					tooltip.select('.count').html(d.data.count); 
+  					tooltip.select('.percent').html(percent + '%');
+  					if(check4) 
+  					tooltip.style('display', 'block');
+  					else
+  					tooltip.style('display', 'none');
+
+  					//binded data in previous lines and defining how the data will be displayed and what will be displayed
+  					/*d3.select(this)
+  						.attr("stroke","white")
+  						.transition()
+  						.duration(1000)
+  						.attr('d',arcOver)   // this and next line basically used for expanding the pie chart by increasing the outer radius
+  						.attr("stroke-width",6);   */
+				});
+
+
+            	//mouseout functionalities
+            	arcs.on('mouseout',function(d){
+            		tooltip.style('display','none');
+            	/*	d3.select(this).transition()
+            		.attr('d',arc)    // this and next line for making the extended arc come back to initial position
+            		.attr("stroke","none")   */
+            	});
+
+
+
+            	//adding mousemove effect
+            	arcs.on('mousemove',function(d){
+            		var tot =d3.sum(dataset.map(function(d){
+            			return d.count;
+            		}));
+            		var arr =d3.mouse(this);
+            		//console.log("x" : arr[0] , "y" : arr[1]);
+            		tooltip.style({
+                    	left: (arr[0]+300)+"px",
+                    	top: (arr[1]+350)+"px"
+               
+                	});
+                	//console.log(tooltip.left);
+                    //	console.log(tooltip.top);
+            		var percent = Math.round((1000* d.data.count)/tot) /10;
+            		tooltip.select('.label').html(d.data.label);
+  					tooltip.select('.count').html(d.data.count); 
+  					tooltip.select('.percent').html(percent + '%'); 
+  					if(check4) 
+  					tooltip.style('display', 'block');
+  					else
+  					tooltip.style('display', 'none');
+
+            	});
+        	});        
+      	})(window.d3);
+    </script>
+  </body>
+</html>
