@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>My pie chart</title>
+    <style>
+    #chart 
+    {
+      height: 1200px;
+      position: center;
+      width: 1200px;
+      margin-left: 200px;
+      margin-top: 150px;
+    }
+    .tooltip 
+    {
+      background: #eee;
+      box-shadow: 0 0 5px #999999;
+      color: #333;
+      display: none;
+      font-size: 12px;
+      left: 130px;
+      padding: 10px;
+      position: absolute;
+      text-align: center;
+      top: 95px;
+      width: 80px;
+      z-index: 10;
+    }
+    .legend 
+    {
+      font-size: 12px;
+      }
+    rect 
+    {
+      cursor: pointer;                                              /* NEW */
+      stroke-width: 2;
+    }
+    rect.disabled 
+    {                                                 /* NEW */
+      fill: transparent !important;                                 /* NEW */
+    }          
+  </style>
+</head>
+<body>
+    <div id="chart"></div>
+    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script>
+      (function(d3) 
+      {
+        // size of the window for the pie chart and all other variables
+        var width = 500;
+        var height = 500;
+        var radius = 150;
+        var donutWidth = 75;
+        var legendRectSize = 10;
+        var legendSpacing = 4;
+        var check1=1;   // for displaying labels if 1 ..labels will be shown
+        var check2=1;   // for expanding if 1 ...the pie chart will be expanded on click
+        var check3=1;    // for hovering ////if 1 data will be shown on hovering 
+        var color = d3.scale.category20c();
+
+        ////////end of basic variables ///////////////////////
+
+
+        
+        var svg = d3.select('#chart')   ///using DOM element having id value =chart
+          .append('svg')  //appending an element /variable to that we have selected
+          .attr('width', width) //setting the size of the element by chaining
+          .attr('height', height)
+          .append('g')   //appending a g element to svg element
+          .attr('transform', 'translate(' + (width / 2) + ',' + (height / 2) + ')');
+
+        //defining the constraint of the arc
+        var arc = d3.svg.arc()
+          .innerRadius(radius - donutWidth)
+          .outerRadius(radius);
+
+        // defining a variable that will store the count .which will be the basis for deciding the size of arc(numerical data  retrieval)
+        var pie = d3.layout.pie()
+          .value(function(d) { return d.count; })
+          .sort(null);
+
+        var arcOver =d3.svg.arc()
+            .outerRadius(radius +15);
+
+          // tooltip variable and adding the attribute which we have to  make it represent
+        var tooltip = d3.select('#chart')
+          .append('div')
+          .attr('class', 'tooltip');
+        tooltip.append('div')
+          .attr('class', 'label');
+        tooltip.append('div')
+          .attr('class', 'count');
+        tooltip.append('div')
+          .attr('class', 'percent');
+        //////////////////////////////////////////////////////////////
+
+
+        //function for animation...the chart will be appearing in clock-wise manner
+        function tweenPie(finish)
+        {
+            var strt=
+            {
+              startAngle:0,
+              endAngle:0
+            };
+            var i=d3.interpolate(strt,finish);
+            return function(d){ return arc(i(d)) ;};
+        }
+        ////////////////////////////////////////////////////
+
+
+        //data is being loaded from an external file present in the same folder named as data
+        // using d3.csv we are fetching the data from the file in array form
+        d3.csv('data.csv', function(error, dataset) 
+        {
+            //storing the numerical value present in the dataset 
+            dataset.forEach(function(d) {
+              d.count = +d.count;
+              d.enabled = true;                                      
+            });
+
+            //defining the arc 
+            var arcs =svg.selectAll('g.slice')    ///selecting all the slice(Arc) element present in svg:slice
+            .data(pie(dataset)) //binding it with the data
+            .enter() /// this line and below line take care of proper mapping of data to elements
+            .append('g')
+            .attr("class","slice");
+
+            arc = d3.svg.arc()
+              //.innerRadius(radius - donutWidth)
+              .outerRadius(radius);
+
+            //writing labels to each arc 
+            arcs.append("svg:text")  //using append function we are selecting ..text element
+                .attr("transform",function(d)  //defining the movement of arc .how it will move and accordingly data will be wriiten based on position
+                {
+                  d.outerRadius= radius +60;
+                  d.innerRadius= radius +55;
+                  return 'translate('+arc.centroid(d)+')';
+                })
+
+                //styling of the text that is going to be present as labels
+
+                .attr("text-anchor","middle")
+                .style("fill","Purple")
+                .style("font","bold 12px Arial")
+                .text(function(d,i){
+                 if(check1)    //server condition ..whether to make labels visible or not... if 0 labels won't be shown
+                  return dataset[i].label;  /// fething data from dataset array to be presented on labels
+                });
+
+            //modifying the arc  so that a donut can be constructed so including a inner radius attribute
+            arc = d3.svg.arc()
+              .innerRadius(radius - donutWidth)
+              .outerRadius(radius);
+
+            // a new variable that would select all the path element form  svg
+            var path =svg.selectAll('path')
+            .data(pie(dataset))  //binding it with the data
+            .enter()
+            .append('path')
+            .attr("class","slice")
+            .on('click',function(d,i)   //adding functionalities of expanding on the onclick
+            {
+              d3.select(this)
+              .transition()
+              .duration(500)
+              .attr("transform",function(d)
+              {
+                if(!d.data._expanded)
+                {
+                    d.data._expanded = true;
+                    var a = d.startAngle + (d.endAngle - d.startAngle)/2 - Math.PI/2;
+                    var x = Math.cos(a) * 20;
+                    var y = Math.sin(a) * 20;
+                      return 'translate(' + x + ',' + y + ')';                
+                  } 
+                  else 
+                  {
+                      d.data._expanded = false;
+                      return 'translate(0,0)';                
+                  }
+                }); 
+            });
+
+            //filling each path with color assigned using color ...that has been initialized earlier
+            path.attr('fill', function(d, i){ 
+                  return color(d.data.label);      
+                       /// assigning color to each part of pie chart representation
+                })
+                .attr('d',arc)
+                .transition()
+                .duration(500)
+                .attrTween('d',tweenPie)
+                .each(function(d) { this._current = d; });
+
+            
+          //now we have to use mouseEvent handler so that data associated with each block could be displayed while hovering over the pie chart and the outer radius will increase such that split can be shown
+            path.on('mouseover',function(d)
+            {
+                var tot =d3.sum(dataset.map(function(d){
+                  return (d.enabled)?d.count:0;
+                }));
+
+                var percent = Math.round((1000* d.data.count)/tot) /10;
+                tooltip.select('.label').html(d.data.label);
+                tooltip.select('.count').html(d.data.count); 
+                tooltip.select('.percent').html(percent + '%');
+                if(check3) 
+                tooltip.style('display', 'block');
+                else
+                tooltip.style('display', 'none');
+
+            //binded data in previous lines and defining how the data will be displayed and what will be displayed
+            /*d3.select(this)
+              .attr("stroke","white")
+              .transition()
+              .duration(1000)
+              .attr('d',arcOver)   // this and next line basically used for expanding the pie chart by increasing the outer radius
+              .attr("stroke-width",6);   */
+            });
+
+            arcs.on('mouseout',function(d)
+            {
+              tooltip.style('display','none');
+              /*  d3.select(this).transition()
+                .attr('d',arc)    // this and next line for making the extended arc come back to initial position
+                .attr("stroke","none")   */
+            });
+
+              //adding mousemove effect
+            arcs.on('mousemove',function(d)
+            {
+                var tot =d3.sum(dataset.map(function(d){
+                  return d.count;
+                }));
+                var arr =d3.mouse(this);
+                //console.log("x" : arr[0] , "y" : arr[1]);
+                tooltip.style({
+                      left: (arr[0]+350)+"px",
+                      top: (arr[1]+450)+"px"
+               
+                  });
+                  //console.log(tooltip.left);
+                 //  console.log(tooltip.top);
+                var percent = Math.round((1000* d.data.count)/tot) /10;
+                tooltip.select('.label').html(d.data.label);
+                tooltip.select('.count').html(d.data.count); 
+                tooltip.select('.percent').html(percent + '%'); 
+                if(check3) 
+                tooltip.style('display', 'block');
+                else
+                tooltip.style('display', 'none');
+
+              });
+
+          
+            
+          // for data displaying in shorter form giving idea which portion descibes which we are using legend
+          //we first define a variable that will slect all the legends element from clas "legend "and bind it with the color of arc and correspondingly its label name
+          var legend = svg.selectAll('.legend')
+            .data(color.domain())
+            .enter()
+            .append('g')   // each g is given a legend class
+            .attr('class', 'legend')
+            .attr('transform', function(d, i) {   //positioning the legend and how it will be displayed
+              var height = legendRectSize + legendSpacing;
+              var offset =  height * color.domain().length / 2;
+              var horz = -2 * legendRectSize;
+              var vert = i * height - offset;
+              return 'translate(' + horz + ',' + vert + ')';
+            });
+
+          legend.append('rect')    ///what will be the type of pictorial reperesenation of legend .Here we used rectangle
+            .attr('width', legendRectSize)  //mapping it with the width and height
+            .attr('height', legendRectSize)                                   
+            .style('fill', color)
+            .style('stroke', color)       
+              // adding functionality to each rectangle defining how the data will be presented after click function is called
+            .on('click', function(label) {    //if click is done on any rectangle we pass the label value  which will be used for further action                       
+              var rect = d3.select(this);                             
+              var enabled = true;                //selececting that particular rectangular and checking the condition whether it is marked or unmarked           
+
+              // we would count the total sum of enabled rectangles          
+              var totalEnabled = d3.sum(dataset.map(function(d) {     
+                return (d.enabled) ? 1 : 0;                           
+              }));                                                    
+              
+              // if it is disabled ..leave it 
+              if (rect.attr('class') === 'disabled') 
+              rect.attr('class', ''); 
+
+              //else we would check total enabled component if it is less than 2 that means one complete donut will be allocated to data so no work has to be made ..  and for each enabled after clicking on it turn it to disabled                          
+              else
+              {                                                
+                  if (totalEnabled < 2) 
+                  return;                         
+                  rect.attr('class', 'disabled');                       
+                  enabled = false;                                      
+              }                                                       
+
+              //from whole bunch of arc checking which rectangle has been clicked and added corresponding function to it
+              pie.value(function(d) 
+              {                                 
+                  if (d.label === label) 
+                  d.enabled = enabled;           
+                  return (d.enabled) ? d.count : 0;                     
+              });
+
+              //after all counting has been done we would bind the remaining data and then redraw over exisitng one based on new values and percentage                                                     
+
+              path= path.data(pie(dataset));                         
+              path.append('path');
+              path.transition()                                       
+                  .duration(750)                                        
+                  .attrTween('d', function(d) 
+                  {                         
+                      var interpolate = d3.interpolate(this._current, d); 
+                      this._current = interpolate(0);                     
+                      return function(t) 
+                      {                                
+                          return arc(interpolate(t));                       
+                      };                                                  
+                  });                                                   
+              });                                                       
+            
+          // for showing text corresponding to each label present on the chart
+          legend.append('text')
+            .attr('x', legendRectSize + legendSpacing)
+            .attr('y', legendRectSize - legendSpacing)
+            .text(function(d) { return d; });
+
+        });
+
+      })(window.d3);
+    </script>
+  </body>
+</html>
