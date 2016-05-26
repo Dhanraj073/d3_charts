@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Step 1 - A Basic Pie Chart</title>
+  </head>
+  <body>
+       
+    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script> 
+    <script src="./javascript/new_file.js"></script> 
+    <div>
+      <select id="select-list">
+        <option value="v1">Chart 1</option> 
+        <option value="v2">Chart 2</option>
+        <option value="v3">Chart 3</option>
+      </select>
+    </div>
+    <script>
+   runC(); 
+    console.log("00");
+    var alertChange = function() 
+    {
+        var selectedIndex = d3.event.target.selectedIndex;
+        if(selectedIndex===1)
+        {
+          runA();
+          console.log("11");
+        }
+        else if(selectedIndex===2)
+        {
+            runB();
+            console.log("22");
+        }  
+        else 
+        {
+            runC();
+            console.log("33");
+        }
+    }
+    d3.select("#select-list").on("change", alertChange);</script>
+     
+  </body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+var width = 360;
+var height = 360;
+var radius = 150;
+var svg = d3.select("body")
+    .append('svg')
+    .attr('width', width)
+    .attr('height', height)
+    .append('g')
+    .attr('transform', 'translate(' + (width / 2) + ',' + (height / 2) + ')');
+var arc = d3.svg.arc()
+    .outerRadius(radius);
+
+var path;
+function runA()
+{
+   d3.selectAll('path').remove();
+    d3.csv('data.csv', function(error, dataset) 
+    {
+        dataset.forEach(function(d) 
+        {
+          d.count1 = +d.count1; 
+          d.count2 =+d.count2;                                    
+        });    
+        var color = d3.scale.category20c();
+         console.log("in a");
+        console.log(dataset);
+        var pie = d3.layout.pie()
+          .value(function(d) { return d.count; })
+          .sort(null);
+        path = svg.selectAll('path')
+          .data(pie(dataset))
+          .enter()
+          .append('path')
+          .attr('d', arc)
+          .attr('fill', function(d, i) { 
+            return color(d.data.label);
+          });
+    });
+
+}
+
+function runB()
+{
+    d3.selectAll('path').remove();
+    d3.csv('data.csv', function(error, dataset) 
+    {
+      dataset.forEach(function(d) 
+      {
+        d.count2 = +d.count2; 
+        d.count1 =+d.count1;                                   
+      });
+      var color = d3.scale.category20b();
+      console.log(dataset);
+      var pie = d3.layout.pie()
+          .value(function(d) { return d.count; })
+          .sort(null);
+      path = svg.selectAll('path')
+        .data(pie(dataset))
+        .enter()
+        .append('path')
+        .attr('d', arc)
+        .attr('fill', function(d, i) { 
+          return color(d.data.label);
+        });
+    })
+}
+function runC()
+{
+   
+    d3.csv('data.csv', function(error, dataset) 
+    {
+      dataset.forEach(function(d) 
+      {
+        d.count1 = +d.count1;    
+        d.count2= +d.count2;                                 
+      });
+      var color = d3.scale.category10();
+       console.log("in c");
+      var pie = d3.layout.pie()
+        .value(function(d) { return d.count; })
+        .sort(null);
+      console.log(dataset);
+      path = svg.selectAll('path')
+        .data(pie(dataset))
+        .enter()
+        .append('path')
+        .attr('d', arc)
+        .attr('fill', function(d, i) { 
+          return color(d.data.label);
+        });
+
+    })
+     d3.selectAll('path').remove();
+} 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+data.csv 
+label,count
+Monday,379130
+Tuesday,424923
+Wednesday,430728
+Thursday,432138
+Friday,428295
+Saturday,368239
+Sunday,282701
